@@ -20,8 +20,8 @@
 package config
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
 
 	"encoding/json"
 	"fmt"
@@ -53,6 +53,7 @@ func (p *ConnProfile) String() string {
 
 const (
 	CONN_TYPE_NONE ConnType = iota
+	CONN_TYPE_MQTT
 	CONN_TYPE_SERIAL_PLAIN
 	CONN_TYPE_SERIAL_OIC
 	CONN_TYPE_BLL_PLAIN
@@ -66,6 +67,7 @@ const (
 
 var connTypeNameMap = map[ConnType]string{
 	CONN_TYPE_SERIAL_PLAIN:   "serial",
+	CONN_TYPE_MQTT:           "mqtt",
 	CONN_TYPE_SERIAL_OIC:     "oic_serial",
 	CONN_TYPE_BLL_PLAIN:      "ble",
 	CONN_TYPE_BLL_OIC:        "oic_ble",
@@ -82,6 +84,7 @@ func ConnTypeToString(ct ConnType) string {
 }
 
 func ConnTypeFromString(s string) (ConnType, error) {
+	print(s)
 	for k, v := range connTypeNameMap {
 		if s == v {
 			return k, nil

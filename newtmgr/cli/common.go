@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"mynewt.apache.org/newtmgr/nmxact/nmqtt"
 
 	"mynewt.apache.org/newt/util"
 	"mynewt.apache.org/newtmgr/newtmgr/bll"
@@ -152,6 +153,13 @@ func GetXport() (xport.Xport, error) {
 	case config.CONN_TYPE_MTECH_LORA_OIC:
 		cfg := mtech_lora.NewXportCfg()
 		globalXport = mtech_lora.NewLoraXport(cfg)
+	case config.CONN_TYPE_MQTT:
+		sc, err := config.ParseMqttConnString(cp.ConnString)
+		if err != nil {
+			return nil, err
+		}
+
+		globalXport = nmqtt.NewMqttXport(*sc)
 
 	default:
 		return nil, util.FmtNewtError("Unknown connection type: %s (%d)",
@@ -187,7 +195,9 @@ func buildSesnCfg() (sesn.SesnCfg, error) {
 	case config.CONN_TYPE_SERIAL_PLAIN:
 		sc.MgmtProto = sesn.MGMT_PROTO_NMP
 		return sc, nil
-
+	case config.CONN_TYPE_MQTT:
+		sc.MgmtProto = sesn.MGMT_PROTO_NMP
+		return sc, nil
 	case config.CONN_TYPE_SERIAL_OIC:
 		sc.MgmtProto = sesn.MGMT_PROTO_OMP
 		return sc, nil

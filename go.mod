@@ -12,6 +12,7 @@ require (
 	github.com/chzyer/readline v0.0.0-20171208011716-f6d7a1f6fbf3 // indirect
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/cosiner/argv v0.0.1 // indirect
+	github.com/eclipse/paho.mqtt.golang v1.3.5 // indirect
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/fatih/structs v1.1.0
 	github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
@@ -23,7 +24,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/raff/goble v0.0.0-20200327175727-d63360dcfd80 // indirect
 	github.com/runtimeco/go-coap v0.0.0-20190911184520-8e5532820fc0
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -31,7 +32,7 @@ require (
 	github.com/ugorji/go/codec v1.1.7
 	go.starlark.net v0.0.0-20190919145610-979af19b165c // indirect
 	golang.org/x/arch v0.0.0-20190927153633-4e8777c89be4 // indirect
-	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914
+	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
 	gopkg.in/VividCortex/ewma.v1 v1.1.1 // indirect
 	gopkg.in/abiosoft/ishell.v2 v2.0.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
@@ -42,4 +43,5 @@ require (
 	gopkg.in/mattn/go-runewidth.v0 v0.0.4 // indirect
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 	mynewt.apache.org/newt v0.0.0-20200409145402-c5d1e422bfa3
+	
 )
