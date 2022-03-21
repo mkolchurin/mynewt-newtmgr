@@ -74,40 +74,19 @@ func (s *MqttSesn) Open() error {
 	if s.mx.MqttCfg.Store != ":memory:" {
 		opts.SetStore(MQTT.NewFileStore(s.mx.MqttCfg.Store))
 	}
-	//opts.SetDefaultPublishHandler(func(client MQTT.Client, msg MQTT.Message) {
-	//	s.txvr.DispatchNmpRsp(msg.Payload())
-	//	// choke <- [2]string{msg.Topic(), string(msg.Payload())}
-	//})
-
 	s.conn = MQTT.NewClient(opts)
 	if token := (s.conn).Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 	idStr := ""
-	if s.mx.MqttCfg.DeviceId != 0 {
-		idStr = strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
-	}
-	if token := (s.conn).Subscribe("update/"+idStr+(s.mx.MqttCfg.RxTopic),
+	idStr = strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
+	if token := (s.conn).Subscribe((s.mx.MqttCfg.Id)+"/update/"+idStr+(s.mx.MqttCfg.RxTopic),
 		byte(s.mx.MqttCfg.Qos), func(client MQTT.Client, message MQTT.Message) {
 			s.txvr.DispatchCoap(message.Payload())
 			s.txvr.DispatchNmpRsp(message.Payload())
 		}); token.Wait() && token.Error() != nil {
 		fmt.Println(token.Error())
-		// os.Exit(1)
 	}
-
-	// client.Disconnect(250)
-
-	// conn, mqttParams, err := Listen(s.cfg.MqttSpec,
-	// 	func(data []byte) {
-	// 		s.txvr.DispatchNmpRsp(data)
-	// 	})
-	// if err != nil {
-	// 	return err
-	// }
-
-	// s.MqttParams = mqttParams
-	// s.conn = conn
 	return nil
 }
 
@@ -120,11 +99,6 @@ func (s *MqttSesn) Close() error {
 	s.mx.started = false
 	s.conn = nil
 	s.mx = nil
-	// s.conn.Close()
-	// s.txvr.ErrorAll(fmt.Errorf("closed"))
-	// s.txvr.Stop()
-	// s.conn = nil
-	// s.MqttParams = nil
 	return nil
 }
 
@@ -152,12 +126,8 @@ func (s *MqttSesn) TxRxMgmt(m *nmp.NmpMsg,
 	}
 
 	txRaw := func(b []byte) error {
-		idStr := ""
-		if s.mx.MqttCfg.DeviceId != 0 {
-			idStr = strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
-		}
-
-		token := (s.conn).Publish("update/"+idStr+(s.mx.MqttCfg.TxTopic), byte(s.mx.MqttCfg.Qos), false, b)
+		idStr := strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
+		token := (s.conn).Publish((s.mx.MqttCfg.Id)+"/update/"+idStr+(s.mx.MqttCfg.TxTopic), byte(s.mx.MqttCfg.Qos), false, b)
 		token.Wait()
 		return token.Error()
 	}
@@ -182,11 +152,8 @@ func (s *MqttSesn) AbortRx(seq uint8) error {
 
 func (s *MqttSesn) TxCoap(m coap.Message) error {
 	txRaw := func(b []byte) error {
-		idStr := ""
-		if s.mx.MqttCfg.DeviceId != 0 {
-			idStr = strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
-		}
-		token := (s.conn).Publish("update/"+idStr+(s.mx.MqttCfg.TxTopic), byte(s.mx.MqttCfg.Qos), false, b)
+		idStr := strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
+		token := (s.conn).Publish((s.mx.MqttCfg.Id)+"/update/"+idStr+(s.mx.MqttCfg.TxTopic), byte(s.mx.MqttCfg.Qos), false, b)
 		token.Wait()
 		return token.Error()
 	}

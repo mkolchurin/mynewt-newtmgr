@@ -36,10 +36,7 @@ type MqttXPortCfg struct {
 	Id        string
 	Cleansess bool
 	Qos       int8
-	// payload   string
-	// action    string
-	Store string
-	// started bool
+	Store     string
 }
 
 type MqttXPort struct {
