@@ -21,6 +21,8 @@ package nmqtt
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -49,7 +51,7 @@ func NewMqttSesn(mx *MqttXPort, cfg sesn.SesnCfg) (*MqttSesn, error) {
 		mx:  mx,
 	}
 
-	txvr, err := mgmt.NewTransceiver(cfg.TxFilter, cfg.RxFilter, false,
+	txvr, err := mgmt.NewTransceiver(cfg.TxFilter, cfg.RxFilter, true,
 		cfg.MgmtProto, 3)
 	if err != nil {
 		return nil, err
@@ -64,29 +66,34 @@ func (s *MqttSesn) Open() error {
 		return nmxutil.NewSesnAlreadyOpenError(
 			"Attempt to open an already-open UDP session")
 	}
-
 	opts := MQTT.NewClientOptions()
 	opts.AddBroker(s.mx.MqttCfg.Broker)
-	opts.SetClientID(s.mx.MqttCfg.Id)
+	opts.SetClientID(s.mx.MqttCfg.Id + strconv.Itoa(rand.Intn(5000)))
 	opts.SetUsername(s.mx.MqttCfg.User)
 	opts.SetPassword(s.mx.MqttCfg.Password)
 	opts.SetCleanSession(s.mx.MqttCfg.Cleansess)
 	if s.mx.MqttCfg.Store != ":memory:" {
 		opts.SetStore(MQTT.NewFileStore(s.mx.MqttCfg.Store))
 	}
+
 	s.conn = MQTT.NewClient(opts)
 	if token := (s.conn).Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
+
 	idStr := ""
 	idStr = strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
 	if token := (s.conn).Subscribe((s.mx.MqttCfg.Id)+"/update/"+idStr+(s.mx.MqttCfg.RxTopic),
 		byte(s.mx.MqttCfg.Qos), func(client MQTT.Client, message MQTT.Message) {
-			s.txvr.DispatchCoap(message.Payload())
-			s.txvr.DispatchNmpRsp(message.Payload())
+			if client.IsConnected() == true {
+				s.txvr.DispatchNmpRsp(message.Payload())
+			} else {
+				fmt.Println("Connection is lost")
+			}
 		}); token.Wait() && token.Error() != nil {
 		fmt.Println(token.Error())
 	}
+	log.Infof("Mqtt connected")
 	return nil
 }
 
@@ -129,8 +136,13 @@ func (s *MqttSesn) TxRxMgmt(m *nmp.NmpMsg,
 		idStr := strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
 		token := (s.conn).Publish((s.mx.MqttCfg.Id)+"/update/"+idStr+(s.mx.MqttCfg.TxTopic), byte(s.mx.MqttCfg.Qos), false, b)
 		token.Wait()
-		return token.Error()
+		err := token.Error()
+		if err != nil {
+			log.Infof("token pub '%s'", err.Error())
+		}
+		return err
 	}
+
 	return s.txvr.TxRxMgmt(txRaw, m, s.MtuOut(), timeout)
 }
 
@@ -147,6 +159,7 @@ func (s *MqttSesn) TxRxMgmtAsync(m *nmp.NmpMsg,
 
 func (s *MqttSesn) AbortRx(seq uint8) error {
 	s.txvr.ErrorAll(fmt.Errorf("rx aborted"))
+	s.conn.Disconnect(100)
 	return nil
 }
 
@@ -155,7 +168,11 @@ func (s *MqttSesn) TxCoap(m coap.Message) error {
 		idStr := strconv.Itoa(s.mx.MqttCfg.DeviceId) + "/"
 		token := (s.conn).Publish((s.mx.MqttCfg.Id)+"/update/"+idStr+(s.mx.MqttCfg.TxTopic), byte(s.mx.MqttCfg.Qos), false, b)
 		token.Wait()
-		return token.Error()
+		err := token.Error()
+		if err != nil {
+			log.Infof("token pub '%s'", err.Error())
+		}
+		return err
 	}
 
 	return s.txvr.TxCoap(txRaw, m, s.MtuOut())
