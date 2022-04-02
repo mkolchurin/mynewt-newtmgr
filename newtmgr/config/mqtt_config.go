@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"mynewt.apache.org/newt/util"
 	"mynewt.apache.org/newtmgr/nmxact/nmqtt"
@@ -10,16 +9,25 @@ import (
 	"strings"
 )
 
-// connstring = "DeviceID, BrokerAddr, UserName, Password, QoS, ClientID".
-// For example:
-// connstring="Client1,tcp://localhost:1883,,,0,0" or
-// connstring="Client1,tcp://localhost:1883,User,Password,0,1"
+//ParseMqttConnString
+//
+//connstring = "DeviceID, BrokerAddr, UserName, Password, QoS, ClientID, MtuIn, MtuOut" (MtuIn and MtuOut is optional)
+//
+//For example:
+//
+//"path/to/topic/1,tcp://localhost:1883,,,0,0"
+//
+//"path/to/topic/2,tcp://localhost:1883,User,Password,0,1"
+//
+//"path/to/topic/3,tcp://localhost:1883,User,Password,0,1,1024"
+//
+//"path/to/topic/4,tcp://localhost:1883,User,Password,0,1,255,1024"
 func ParseMqttConnString(cs string) (*nmqtt.MqttXPortCfg, error) {
 	sc := nmqtt.NewXportCfg()
 
 	parts := strings.Split(cs, ",")
 	strlen := len(parts)
-	if strlen < 6 {
+	if strlen < 6 || strlen > 8 {
 		return nil, errors.New("wrong args format")
 	}
 	sc.Id = parts[0]
@@ -28,17 +36,31 @@ func ParseMqttConnString(cs string) (*nmqtt.MqttXPortCfg, error) {
 	sc.Password = parts[3]
 	qos, e := strconv.Atoi(parts[4])
 	if e != nil {
-		return nil, fmt.Errorf("failed to parse QOS with error '%s'", e.Error())
+		return nil, e
 	}
 	if qos != 0 && qos != 1 && qos != 2 {
-		return nil, fmt.Errorf("QOS '%d' is not valid", qos)
+		return nil, e
 	}
 	sc.Qos = int8(qos)
 	sc.DeviceId, e = strconv.Atoi(parts[5])
 	if e != nil {
-		return nil, fmt.Errorf("failed to parse device id with error '%s'", e.Error())
+		return nil, e
 	}
-	log.Infof("mqtt id '%s'; Broker '%s'; user '%s'; qos '%d'; devId '%d'", sc.Id, sc.Broker, sc.User, sc.Qos, sc.DeviceId)
+	if strlen > 6 {
+		sc.MtuIn, e = strconv.Atoi(parts[6])
+		sc.MtuOut = sc.MtuIn
+		if e != nil {
+			return nil, e
+		}
+	}
+	if strlen == 8 {
+		sc.MtuOut, e = strconv.Atoi(parts[7])
+		if e != nil {
+			return nil, e
+		}
+	}
+	log.Infof("mqtt id '%s'; Broker '%s'; user '%s'; qos '%d'; devId '%d'; MtuIn '%d'; MtuOut '%d'",
+		sc.Id, sc.Broker, sc.User, sc.Qos, sc.DeviceId, sc.MtuIn, sc.MtuOut)
 	return sc, nil
 }
 
